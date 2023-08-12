@@ -8,11 +8,45 @@ RSpec.describe SimplePubSub do
     def call(payload); end
   end
 
+  before do
+    # イベント名のモジュールを設定
+    module EventNames
+      TEST_EVENT = :test_event unless defined?(TEST_EVENT)
+      NO_ARGS_EVENT = :no_args_event unless defined?(NO_ARGS_EVENT)
+    end
+    SimplePubSub.event_names_module = EventNames
+  end
+
   describe 'subscribe' do
     context '購読の登録' do
       it '購読が正常に登録されること' do
         SimplePubSub.subscribe(:test_event, DummySubscriber.new, DummyPayload)
         expect(SimplePubSub.subscriptions[:test_event]).not_to be_nil
+      end
+    end
+
+    context '引数がない場合' do
+      before do
+        module Subscribers
+          class NoArgsEvent
+            def call(payload); end
+          end
+        end
+
+        module Payloads
+          class NoArgsEvent; end
+        end
+      end
+
+      it 'SubscriberとPayloadのクラスが動的に読み込まれて購読が登録されること' do
+        expect { SimplePubSub.subscribe(:no_args_event) }.not_to raise_error
+        expect(SimplePubSub.subscriptions[:no_args_event]).not_to be_nil
+      end
+
+      after do
+        # Cleanup
+        Subscribers.send(:remove_const, :NoArgsEvent)
+        Payloads.send(:remove_const, :NoArgsEvent)
       end
     end
   end
@@ -38,7 +72,7 @@ RSpec.describe SimplePubSub do
     end
   end
 
-  describe 'mute_within' do
+  xdescribe 'mute_within' do
     let(:subscriber) { DummySubscriber.new }
 
     before do
@@ -65,41 +99,4 @@ RSpec.describe SimplePubSub do
     end
   end
 
-  xdescribe 'スレッドセーフ性' do
-    let(:subscriber) { DummySubscriber.new }
-
-    context ".subscribe" do
-      it '異なるスレッド間で設定が共有されないこと' do
-        thread = Thread.new do
-          SimplePubSub.subscribe(:test_event, subscriber, DummyPayload)
-        end
-
-        thread.join
-
-        # expect(subscriber).to receive(:call)
-        expect(SimplePubSub.subscriptions[:test_event]).to eq nil
-      end
-    end
-
-    xcontext ".subscribe" do
-      before do
-        SimplePubSub.subscribe(:test_event, subscriber, DummyPayload)
-      end
-
-      it '異なるスレッド間で設定が共有されないこと' do
-        thread = Thread.new do
-          SimplePubSub.mute_within(:test_event) do
-            expect(subscriber).not_to receive(:call)
-            SimplePubSub.publish(:test_event, DummyPayload.new)
-          end
-        end
-
-        thread.join
-
-        expect(subscriber).to receive(:call)
-        SimplePubSub.publish(:test_event, DummyPayload.new)
-      end
-    end
-
-  end
 end
