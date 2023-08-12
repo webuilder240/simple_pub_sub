@@ -1,11 +1,9 @@
 module SimplePubSub
   class InvalidEventError < StandardError; end
   class InvalidPayloadError < StandardError; end
-  @subscriptions = Hash.new { |hash, key| hash[key] = [] }
-  @muted_events = []
   
   def self.subscriptions
-    Thread.current[:simple_pub_sub_subscriptions] ||= @subscriptions
+    Thread.current[:simple_pub_sub_subscriptions] ||= Hash.new { |hash, key| hash[key] = [] }
   end
 
   def self.muted_events
@@ -15,6 +13,7 @@ module SimplePubSub
   def self.mute_within(event_name)
     muted_events << event_name
     yield
+  ensure
     muted_events.delete(event_name)
   end
 
@@ -26,7 +25,6 @@ module SimplePubSub
 
   def self.publish(event_name, payload)
     return if muted_events.include?(event_name)
-    return unless @subscribers[event_name]
     raise InvalidEventError, "Unknown event name: #{event_name}" unless EventNames.const_defined?(event_name.upcase)
 
     subscriptions[event_name].each do |subscription|
@@ -34,14 +32,8 @@ module SimplePubSub
       unless payload.class.to_s == expected_klass.to_s
         raise InvalidPayloadError, "Expected payload of type #{expected_klass}, got #{payload.class}"
       end
-      payload.validate!
+      payload.validate! if payload.respond_to?(:validate!)
       subscription[:subscriber].call(payload)
     end
-  end
-
-  def self.within(&block)
-    original_subscriptions = @subscriptions.deep_dup
-    yield
-    @subscriptions = original_subscriptions
   end
 end
