@@ -61,14 +61,20 @@ module SimplePubSub
     subscriptions[event_name] << { subscriber: subscriber, payload_klass: payload_klass }
   end
 
-  def self.publish(event_name, payload)
+  def self.publish(event_name, payload = nil)
     if muted_events.include?(event_name)
       Rails.logger.info("===============================")
       Rails.logger.info("Muted event: #{event_name}")
       Rails.logger.info("===============================")
       return 
     end
-    raise InvalidEventError, "Unknown event name: #{event_name}" unless event_names.include?(event_name)
+
+    unless event_names.include?(event_name)
+      Rails.logger.error("===============================")
+      Rails.logger.error(subscriptions)
+      Rails.logger.error("===============================")
+      raise InvalidEventError, "Unknown event name: #{event_name}" 
+    end
 
     Rails.logger.info("===============================")
     Rails.logger.info("Publishing event: #{event_name}")
@@ -81,7 +87,11 @@ module SimplePubSub
       end
       Rails.logger.info("Calling subscriber: #{subscription[:subscriber].class}")
       payload&.validate! if payload.respond_to?(:validate!)
-      subscription[:subscriber].call(payload)
+      if payload.nil?
+        subscription[:subscriber].call()
+      else 
+        subscription[:subscriber].call(payload)
+      end
     end
   end
 end
