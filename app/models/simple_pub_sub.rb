@@ -23,7 +23,10 @@ module SimplePubSub
   end
 
   def self.muted_events
-    @muted_events
+    if Thread.current[:simple_pub_sub_muted_events].nil?
+      Thread.current[:simple_pub_sub_muted_events] = []
+    end
+    Thread.current[:simple_pub_sub_muted_events]
   end
 
   def self.ensure_subscriber_loaded(klass_name)
@@ -37,7 +40,14 @@ module SimplePubSub
     full_name = "Payloads::#{klass_name}"
     return Object.const_get(full_name) if Object.const_defined?(full_name)
     
-    nil # Payloadは必須ではないので、存在しない場合はnilを返します
+    nil
+  end
+
+  def self.mute_within(event_name)
+    muted_events << event_name
+    yield
+  ensure
+    muted_events.delete(event_name)
   end
 
   def self.subscribe(event_name, subscriber = nil, payload_klass = nil)
@@ -52,7 +62,12 @@ module SimplePubSub
   end
 
   def self.publish(event_name, payload)
-    return if muted_events.include?(event_name)
+    if muted_events.include?(event_name)
+      Rails.logger.info("===============================")
+      Rails.logger.info("Muted event: #{event_name}")
+      Rails.logger.info("===============================")
+      return 
+    end
     raise InvalidEventError, "Unknown event name: #{event_name}" unless event_names.include?(event_name)
 
     Rails.logger.info("===============================")

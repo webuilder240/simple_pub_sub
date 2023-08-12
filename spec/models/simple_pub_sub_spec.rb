@@ -72,7 +72,7 @@ RSpec.describe SimplePubSub do
     end
   end
 
-  xdescribe 'mute_within' do
+  describe 'mute_within' do
     let(:subscriber) { DummySubscriber.new }
 
     before do
