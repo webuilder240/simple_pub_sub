@@ -94,7 +94,7 @@ module SimplePubSub
         if payload.nil?
           serialized_payload = nil
         else
-          serialized_payload = PayloadSerializerserialize(payload)
+          serialized_payload = PayloadSerializer.serialize(payload)
         end
         SimplePubSubJob.perform_later(event_name, serialized_payload)
       else 
