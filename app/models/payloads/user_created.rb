@@ -3,6 +3,7 @@ module Payloads
     include ActiveModel::Model
     include ActiveModel::Attributes
     include ActiveModel::Validations
+    include ActiveModel::Serialization
 
     attribute :user
     validates_presence_of :user

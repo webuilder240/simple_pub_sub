@@ -61,11 +61,12 @@ module SimplePubSub
     subscriptions[event_name] << { subscriber: subscriber, payload_klass: payload_klass }
   end
 
-  def self.publish(event_name, payload = nil)
+  def self.publish(event_name, payload = nil, async: false)
     if muted_events.include?(event_name)
       Rails.logger.info("===============================")
       Rails.logger.info("Muted event: #{event_name}")
       Rails.logger.info("===============================")
+
       return 
     end
 
@@ -73,6 +74,7 @@ module SimplePubSub
       Rails.logger.error("===============================")
       Rails.logger.error(subscriptions)
       Rails.logger.error("===============================")
+
       raise InvalidEventError, "Unknown event name: #{event_name}" 
     end
 
@@ -87,10 +89,20 @@ module SimplePubSub
       end
       Rails.logger.info("Calling subscriber: #{subscription[:subscriber].class}")
       payload&.validate! if payload.respond_to?(:validate!)
-      if payload.nil?
-        subscription[:subscriber].call()
+
+      if async
+        if payload.nil?
+          serialized_payload = nil
+        else
+          serialized_payload = PayloadSerializerserialize(payload)
+        end
+        SimplePubSubJob.perform_later(event_name, serialized_payload)
       else 
-        subscription[:subscriber].call(payload)
+        if payload.nil?
+          subscription[:subscriber].call()
+        else 
+          subscription[:subscriber].call(payload)
+        end
       end
     end
   end
