@@ -1,6 +1,6 @@
-module Payloads
-  class UserMatched
-    include Base
+module UserMatched
+  class Payload
+    include Payloads::Base
 
     attribute :first_user
     attribute :second_user

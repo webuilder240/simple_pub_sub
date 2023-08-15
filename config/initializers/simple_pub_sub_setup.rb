@@ -1,8 +1,8 @@
 Rails.configuration.to_prepare do
-  SimplePubSub.event_names_module = EventNames
-  SimplePubSub.subscribe(:user_created)
-  SimplePubSub.subscribe(:user_destroyed)
-  SimplePubSub.subscribe(:user_updated)
-  SimplePubSub.subscribe(:sample_jobs)
-  SimplePubSub.subscribe(:user_matched)
+  EventHandler.event_names_module = EventNames
+  EventHandler.listen(:user_created)
+  EventHandler.listen(:sample_jobs)
+  EventHandler.listen(:user_destroyed)
+  EventHandler.listen(:user_updated)
+  EventHandler.listen(:user_matched)
 end

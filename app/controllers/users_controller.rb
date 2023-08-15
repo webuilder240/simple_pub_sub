@@ -4,20 +4,20 @@ class UsersController < ApplicationController
   # GET /users or /users.json
   def index
     @users = User.all
-    payload = Payloads::SampleJobs.new(
+    payload = {
       score: 0.1,
-      price: 100,
+      # price: 100,
       quantity: 10,
       accessed_at: Time.current,
       is_cancel: false
-    )
-    SimplePubSub.publish(:sample_jobs, payload, async: true)
+    }
+    EventHandler.publish(:sample_jobs, payload, async: true)
 
-    payload = Payloads::UserMatched.new(
-      first_user: User.first,
-      second_user: User.last
-    )
-    SimplePubSub.publish(:user_matched, payload)
+    # payload = UserMatched::Payload.new(
+    #   first_user: User.first,
+    #   second_user: User.last
+    # )
+    # EventHandler.publish(:user_matched, payload)
   end
 
   # GET /users/1 or /users/1.json
@@ -39,8 +39,8 @@ class UsersController < ApplicationController
 
     respond_to do |format|
       if @user.save
-        payload = Payloads::UserCreated.new(user: @user)
-        SimplePubSub.publish(:user_created, payload, async: true)
+        payload = UserCreated::Payload.new(user: @user)
+        EventHandler.publish(:user_created, payload, async: true)
         format.html { redirect_to user_url(@user), notice: "User was successfully created." }
         format.json { render :show, status: :created, location: @user }
       else
@@ -54,7 +54,7 @@ class UsersController < ApplicationController
   def update
     respond_to do |format|
       if @user.update(user_params)
-        SimplePubSub.publish(:user_updated, async: true)
+        EventHandler.publish(:user_updated, async: true)
         format.html { redirect_to user_url(@user), notice: "User was successfully updated." }
         format.json { render :show, status: :ok, location: @user }
       else
@@ -67,8 +67,7 @@ class UsersController < ApplicationController
   # DELETE /users/1 or /users/1.json
   def destroy
     @user.destroy!
-    payload = Payloads::UserDestroyed.new(user: @user)
-    SimplePubSub.publish(:user_destroyed, payload)
+    EventHandler.publish(:user_destroyed, {user: @user})
 
     respond_to do |format|
       format.html { redirect_to users_url, notice: "User was successfully destroyed." }

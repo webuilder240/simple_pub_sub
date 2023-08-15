@@ -1,5 +1,5 @@
-module Subscribers
-  class UserUpdated
+module UserUpdated
+  class Handler
     def call
       Rails.logger.info("============================")
       Rails.logger.info("User updated")

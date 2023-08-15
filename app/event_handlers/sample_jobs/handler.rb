@@ -1,8 +1,8 @@
-module Subscribers
-  class UserMatched
+module SampleJobs
+  class Handler
     def call(payload)
       Rails.logger.info("============================")
-      Rails.logger.info("MatchedUser subscriber called")
+      Rails.logger.info("SampleJobs Handler called")
       Rails.logger.info("============================")
       payload.attributes.each do |key, value|
         Rails.logger.info("#{key}: #{value}")
